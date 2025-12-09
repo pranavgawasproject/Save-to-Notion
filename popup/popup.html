@@ -3,174 +3,243 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Notion Research Clipper</title>
+  <title>Notion Clipper</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
+  <div class="app">
     
     <!-- Header -->
     <header class="header">
-      <div class="logo">
-        <span class="logo-icon">📎</span>
-        <div class="logo-text">
-          <h1>Research Clipper</h1>
-          <span class="subtitle">Save to Notion</span>
+      <div class="header-left">
+        <div class="logo">
+          <img src="../icons/icon48.svg" alt="Logo" class="logo-img">
+        </div>
+        <div class="brand">
+          <h1>Notion Clipper</h1>
+          <span class="version">v1.0</span>
         </div>
       </div>
-      <button class="settings-btn" id="settingsBtn" title="Settings">
-        ⚙️
+      <button class="icon-btn" id="settingsBtn" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+        </svg>
       </button>
     </header>
 
     <!-- Connection Status -->
     <div class="status-bar" id="statusBar">
-      <span class="status-icon">🔗</span>
-      <span class="status-text" id="statusText">Checking Notion connection...</span>
+      <div class="status-indicator"></div>
+      <span class="status-text" id="statusText">Connecting to Notion...</span>
     </div>
 
     <!-- Not Connected State -->
-    <div class="connect-prompt" id="connectPrompt" style="display: none;">
-      <div class="connect-icon">🔐</div>
+    <div class="connect-screen" id="connectPrompt" style="display: none;">
+      <div class="connect-illustration">
+        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+          <rect x="10" y="10" width="60" height="60" rx="12" fill="#f3f4f6"/>
+          <rect x="18" y="22" width="28" height="36" rx="4" fill="#6366f1"/>
+          <path d="M24 32h16M24 40h10M24 48h13" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="54" cy="54" r="14" fill="#22c55e"/>
+          <path d="M48 54l4 4 8-8" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
       <h2>Connect to Notion</h2>
-      <p>Link your Notion workspace to start clipping research</p>
-      <button class="btn btn-primary btn-large" id="connectNotionBtn">
-        Connect Notion Account
+      <p>Link your workspace to start saving research, screenshots, and citations.</p>
+      <button class="btn btn-primary btn-lg" id="connectNotionBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2h11A2.5 2.5 0 0 1 20 4.5v15a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5v-15zm7.217 4.003c-1.028-.066-1.954-.044-2.795.056l-.1.012v6.858l.098-.012c.907-.107 1.822-.128 2.797-.06.974.067 1.883.216 2.783.451V8.94a15.29 15.29 0 0 0-2.783-.437zm3.783 8.077a16.07 16.07 0 0 0-3.217-.507c-1.044-.067-2.01-.037-2.944.076l-.839.102V7.747l.84-.103c.934-.113 1.9-.143 2.944-.076a16.07 16.07 0 0 1 3.216.507V16.58z"/>
+        </svg>
+        Connect Notion
       </button>
-      <a href="#" class="help-link" id="helpLink">How does this work?</a>
+      <a href="#" class="help-link" id="helpLink">Learn how it works →</a>
     </div>
 
-    <!-- Main Content (when connected) -->
-    <main class="main-content" id="mainContent" style="display: none;">
+    <!-- Main Content -->
+    <main class="main" id="mainContent" style="display: none;">
       
       <!-- Quick Actions -->
-      <section class="quick-actions">
-        <button class="action-btn" id="clipSelectionBtn">
-          <span class="action-icon">📝</span>
-          <span class="action-label">Clip Selection</span>
-          <span class="action-shortcut">Alt+Shift+S</span>
+      <div class="actions-grid">
+        <button class="action-card" id="clipSelectionBtn">
+          <div class="action-icon purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </svg>
+          </div>
+          <span class="action-title">Clip Text</span>
+          <kbd>Alt+S</kbd>
         </button>
         
-        <button class="action-btn" id="screenshotBtn">
-          <span class="action-icon">📸</span>
-          <span class="action-label">Screenshot</span>
-          <span class="action-shortcut">Alt+Shift+C</span>
+        <button class="action-card" id="screenshotBtn">
+          <div class="action-icon blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 21"/>
+            </svg>
+          </div>
+          <span class="action-title">Screenshot</span>
+          <kbd>Alt+C</kbd>
         </button>
         
-        <button class="action-btn" id="clipPageBtn">
-          <span class="action-icon">📄</span>
-          <span class="action-label">Clip Page</span>
+        <button class="action-card" id="clipPageBtn">
+          <div class="action-icon green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+            </svg>
+          </div>
+          <span class="action-title">Full Page</span>
         </button>
-      </section>
+      </div>
 
-      <!-- Current Page Info -->
-      <section class="page-info" id="pageInfo">
-        <div class="page-header">
-          <span class="section-icon">🌐</span>
-          <h3>Current Page</h3>
+      <!-- Current Page -->
+      <div class="card page-card">
+        <div class="card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="2" y1="12" x2="22" y2="12"/>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+          </svg>
+          <span>Current Page</span>
         </div>
-        <div class="page-details">
+        <div class="page-info">
           <div class="page-title" id="pageTitle">Loading...</div>
           <div class="page-url" id="pageUrl">Loading...</div>
         </div>
-      </section>
+      </div>
 
-      <!-- Citation Preview -->
-      <section class="citation-section">
-        <div class="section-header">
-          <span class="section-icon">📚</span>
-          <h3>Auto-Citation</h3>
-          <select id="citationFormat" class="citation-select">
+      <!-- Citation -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+          </svg>
+          <span>Citation</span>
+          <select id="citationFormat" class="mini-select">
             <option value="apa">APA</option>
             <option value="mla">MLA</option>
             <option value="chicago">Chicago</option>
             <option value="harvard">Harvard</option>
           </select>
         </div>
-        <div class="citation-preview" id="citationPreview">
-          <p class="citation-text" id="citationText">Generating citation...</p>
-          <button class="copy-btn" id="copyCitationBtn" title="Copy citation">
-            📋
+        <div class="citation-box">
+          <p id="citationText">Generating citation...</p>
+          <button class="copy-btn" id="copyCitationBtn" title="Copy">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
           </button>
         </div>
-      </section>
+      </div>
 
-      <!-- Destination Database -->
-      <section class="database-section">
-        <div class="section-header">
-          <span class="section-icon">📁</span>
-          <h3>Save to</h3>
+      <!-- Save Options -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span>Save to</span>
+          <button class="refresh-btn" id="refreshDatabasesBtn" title="Refresh">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+          </button>
         </div>
-        <select id="databaseSelect" class="database-select">
-          <option value="">Select a database...</option>
+        <select id="databaseSelect" class="select-full">
+          <option value="">Choose a database...</option>
         </select>
-        <button class="refresh-btn" id="refreshDatabasesBtn" title="Refresh databases">
-          🔄
-        </button>
-      </section>
+      </div>
 
-      <!-- Tags Input -->
-      <section class="tags-section">
-        <div class="section-header">
-          <span class="section-icon">🏷️</span>
-          <h3>Tags</h3>
+      <!-- Tags -->
+      <div class="card">
+        <div class="card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
+          </svg>
+          <span>Tags</span>
         </div>
-        <div class="tags-input-container">
+        <div class="tags-container">
           <div class="tags-list" id="tagsList"></div>
-          <input type="text" id="tagsInput" class="tags-input" placeholder="Add tags (press Enter)">
+          <input type="text" id="tagsInput" class="tags-input" placeholder="Add tag, press Enter">
         </div>
-      </section>
+      </div>
 
       <!-- Notes -->
-      <section class="notes-section">
-        <div class="section-header">
-          <span class="section-icon">📝</span>
-          <h3>Notes</h3>
+      <div class="card">
+        <div class="card-header">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="17" y1="10" x2="3" y2="10"/>
+            <line x1="21" y1="6" x2="3" y2="6"/>
+            <line x1="21" y1="14" x2="3" y2="14"/>
+            <line x1="17" y1="18" x2="3" y2="18"/>
+          </svg>
+          <span>Notes</span>
         </div>
-        <textarea id="notesInput" class="notes-input" placeholder="Add notes about this clip..." rows="3"></textarea>
-      </section>
+        <textarea id="notesInput" class="textarea" placeholder="Add your notes..."></textarea>
+      </div>
 
       <!-- Save Button -->
-      <button class="btn btn-primary btn-save" id="saveBtn">
-        <span class="btn-icon">💾</span>
+      <button class="btn btn-primary btn-full" id="saveBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+          <polyline points="17 21 17 13 7 13 7 21"/>
+          <polyline points="7 3 7 8 15 8"/>
+        </svg>
         Save to Notion
       </button>
 
     </main>
 
     <!-- Recent Clips -->
-    <section class="recent-section" id="recentSection" style="display: none;">
-      <div class="section-header">
-        <span class="section-icon">🕐</span>
-        <h3>Recent Clips</h3>
+    <section class="recent" id="recentSection" style="display: none;">
+      <div class="recent-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>Recent</span>
       </div>
-      <div class="recent-list" id="recentList">
-        <!-- Populated by JS -->
-      </div>
+      <div class="recent-list" id="recentList"></div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
       <div class="stats" id="stats">
-        <span>📊 0 clips this week</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        <span>0 clips this week</span>
       </div>
-      <div class="footer-links">
-        <a href="#" id="viewInNotionLink">Open Notion</a>
-      </div>
+      <a href="#" class="notion-link" id="viewInNotionLink">
+        Open Notion
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </a>
     </footer>
 
   </div>
 
   <!-- Loading Overlay -->
   <div class="loading-overlay" id="loadingOverlay" style="display: none;">
-    <div class="loading-spinner"></div>
-    <p class="loading-text" id="loadingText">Saving to Notion...</p>
+    <div class="loader"></div>
+    <p id="loadingText">Saving to Notion...</p>
   </div>
 
-  <!-- Toast Notification -->
+  <!-- Toast -->
   <div class="toast" id="toast">
-    <span class="toast-icon" id="toastIcon">✅</span>
-    <span class="toast-message" id="toastMessage">Saved successfully!</span>
+    <span class="toast-icon" id="toastIcon">✓</span>
+    <span class="toast-message" id="toastMessage">Success!</span>
   </div>
 
   <script src="popup.js" type="module"></script>
