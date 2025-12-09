@@ -98,12 +98,17 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   handleMessage(message, sender)
     .then(response => sendResponse(response))
-    .catch(error => sendResponse({ success: false, error: error.message }));
+    .catch(error => {
+      console.error('Message handler error:', error);
+      sendResponse({ success: false, error: error.message });
+    });
   
   return true; // Keep channel open for async response
 });
 
 async function handleMessage(message, sender) {
+  console.log('📎 Received message:', message.type);
+  
   switch (message.type) {
     
     // Notion API
@@ -118,6 +123,9 @@ async function handleMessage(message, sender) {
     case 'GET_NOTION_DATABASES':
       return await getDatabases();
     
+    case 'GET_DATABASE_SCHEMA':
+      return await getDatabaseSchema(message.databaseId);
+    
     case 'SAVE_TO_NOTION':
       return await saveToNotion(message.data);
     
@@ -127,10 +135,10 @@ async function handleMessage(message, sender) {
     
     // Screenshot
     case 'CAPTURE_SCREENSHOT':
-      return await captureScreenshot(sender.tab);
+      return await captureVisibleTab();
     
-    case 'TRIGGER_SCREENSHOT':
-      return await triggerScreenshot(sender.tab);
+    case 'CAPTURE_VISIBLE_TAB':
+      return await captureVisibleTab();
     
     // Quick clip
     case 'QUICK_CLIP':
@@ -179,15 +187,12 @@ async function getDatabases() {
     return { success: true, databases };
     
   } catch (error) {
+    console.error('getDatabases error:', error);
     return { success: false, error: error.message };
   }
 }
 
-// ============================================
-// SAVE TO NOTION
-// ============================================
-
-async function saveToNotion(data) {
+async function getDatabaseSchema(databaseId) {
   try {
     const { notionToken } = await chrome.storage.sync.get('notionToken');
     
@@ -195,11 +200,53 @@ async function saveToNotion(data) {
       return { success: false, error: 'Not connected to Notion' };
     }
     
-    // Build page properties based on data type
-    const properties = buildNotionProperties(data);
+    const response = await NotionAPI.getDatabase(notionToken, databaseId);
+    
+    if (response.error) {
+      return { success: false, error: response.error };
+    }
+    
+    return { success: true, properties: response.properties };
+    
+  } catch (error) {
+    console.error('getDatabaseSchema error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// ============================================
+// SAVE TO NOTION (DYNAMIC PROPERTIES)
+// ============================================
+
+async function saveToNotion(data) {
+  try {
+    const { notionToken } = await chrome.storage.sync.get('notionToken');
+    
+    if (!notionToken) {
+      return { success: false, error: 'Not connected to Notion. Please go to Settings and connect your Notion account.' };
+    }
+    
+    if (!data.databaseId) {
+      return { success: false, error: 'No database selected. Please select a database first.' };
+    }
+    
+    // IMPORTANT: Get database schema to know what properties exist
+    const schemaResponse = await getDatabaseSchema(data.databaseId);
+    
+    if (!schemaResponse.success) {
+      return { success: false, error: 'Could not fetch database schema: ' + schemaResponse.error };
+    }
+    
+    const dbProperties = schemaResponse.properties;
+    console.log('📎 Database properties:', Object.keys(dbProperties));
+    
+    // Build page properties based on what actually exists in the database
+    const properties = buildNotionProperties(data, dbProperties);
     
     // Build page content
     const children = buildNotionContent(data);
+    
+    console.log('📎 Creating page with properties:', Object.keys(properties));
     
     // Create page in database
     const response = await NotionAPI.createPage(
@@ -210,6 +257,7 @@ async function saveToNotion(data) {
     );
     
     if (response.error) {
+      console.error('📎 Notion API error:', response.error);
       return { success: false, error: response.error };
     }
     
@@ -231,86 +279,141 @@ async function saveToNotion(data) {
     };
     
   } catch (error) {
+    console.error('saveToNotion error:', error);
     return { success: false, error: error.message };
   }
 }
 
-function buildNotionProperties(data) {
-  const properties = {
-    // Title property (required)
-    'Name': {
-      title: [
-        {
-          text: {
-            content: data.title || 'Untitled Clip'
-          }
+/**
+ * Build Notion properties dynamically based on what exists in the database
+ */
+function buildNotionProperties(data, dbProperties) {
+  const properties = {};
+  
+  // Find the title property (required, every database has one)
+  const titlePropName = Object.keys(dbProperties).find(
+    key => dbProperties[key].type === 'title'
+  ) || 'Name';
+  
+  properties[titlePropName] = {
+    title: [
+      {
+        text: {
+          content: (data.title || 'Untitled Clip').substring(0, 2000)
         }
-      ]
-    }
+      }
+    ]
   };
   
-  // URL property
-  if (data.url) {
-    properties['URL'] = {
+  // URL property - check various common names
+  const urlPropName = findProperty(dbProperties, 'url', ['URL', 'Url', 'Link', 'Source', 'Source URL']);
+  if (urlPropName && data.url) {
+    properties[urlPropName] = {
       url: data.url
     };
   }
   
-  // Tags property (multi-select)
-  if (data.tags && data.tags.length > 0) {
-    properties['Tags'] = {
+  // Tags property (multi-select) - check various common names
+  const tagsPropName = findProperty(dbProperties, 'multi_select', ['Tags', 'Tag', 'Labels', 'Categories']);
+  if (tagsPropName && data.tags && data.tags.length > 0) {
+    properties[tagsPropName] = {
       multi_select: data.tags.map(tag => ({ name: tag }))
     };
   }
   
-  // Type property (select)
-  properties['Type'] = {
-    select: {
-      name: data.type === 'screenshot' ? 'Screenshot' :
-            data.type === 'selection' ? 'Quote' :
-            data.type === 'page' ? 'Article' : 'Note'
-    }
-  };
+  // Type property (select) - check various common names
+  const typePropName = findProperty(dbProperties, 'select', ['Type', 'Category', 'Kind']);
+  if (typePropName) {
+    const typeValue = data.type === 'screenshot' ? 'Screenshot' :
+                      data.type === 'selection' ? 'Quote' :
+                      data.type === 'page' ? 'Article' :
+                      data.type === 'image' ? 'Image' :
+                      data.type === 'link' ? 'Link' : 'Note';
+    properties[typePropName] = {
+      select: { name: typeValue }
+    };
+  }
   
-  // Date property
-  properties['Clipped'] = {
-    date: {
-      start: new Date().toISOString()
-    }
-  };
+  // Date property - check various common names
+  const datePropName = findProperty(dbProperties, 'date', ['Clipped', 'Date', 'Created', 'Added', 'Saved']);
+  if (datePropName) {
+    properties[datePropName] = {
+      date: {
+        start: new Date().toISOString()
+      }
+    };
+  }
+  
+  // Notes property (rich_text) - check various common names  
+  const notesPropName = findProperty(dbProperties, 'rich_text', ['Notes', 'Description', 'Summary', 'Content']);
+  if (notesPropName && data.notes) {
+    properties[notesPropName] = {
+      rich_text: [
+        {
+          text: {
+            content: data.notes.substring(0, 2000)
+          }
+        }
+      ]
+    };
+  }
   
   return properties;
+}
+
+/**
+ * Find a property in the database by type and possible names
+ */
+function findProperty(dbProperties, type, possibleNames) {
+  // First try exact matches
+  for (const name of possibleNames) {
+    if (dbProperties[name] && dbProperties[name].type === type) {
+      return name;
+    }
+  }
+  
+  // Then try case-insensitive
+  const lowerNames = possibleNames.map(n => n.toLowerCase());
+  for (const key of Object.keys(dbProperties)) {
+    if (dbProperties[key].type === type && lowerNames.includes(key.toLowerCase())) {
+      return key;
+    }
+  }
+  
+  return null;
 }
 
 function buildNotionContent(data) {
   const children = [];
   
-  // Source callout
-  children.push({
-    object: 'block',
-    type: 'callout',
-    callout: {
-      icon: { emoji: '🔗' },
-      rich_text: [
-        {
-          type: 'text',
-          text: {
-            content: 'Source: ',
+  // Source callout with link
+  if (data.url) {
+    children.push({
+      object: 'block',
+      type: 'callout',
+      callout: {
+        icon: { emoji: '🔗' },
+        rich_text: [
+          {
+            type: 'text',
+            text: {
+              content: 'Source: '
+            }
+          },
+          {
+            type: 'text',
+            text: {
+              content: data.url,
+              link: { url: data.url }
+            }
           }
-        },
-        {
-          type: 'text',
-          text: {
-            content: data.url,
-            link: { url: data.url }
-          }
-        }
-      ]
-    }
-  });
+        ]
+      }
+    });
+  }
   
   // Citation block
-  if (data.citation) {
+  if (data.citation && data.citation.formatted) {
     children.push({
       object: 'block',
       type: 'quote',
@@ -338,7 +441,7 @@ function buildNotionContent(data) {
   });
   
   // Content based on type
-  if (data.type === 'selection' && data.content) {
+  if ((data.type === 'selection' || data.type === 'quote') && data.content) {
     // Quote block for selection
     children.push({
       object: 'block',
@@ -348,7 +451,7 @@ function buildNotionContent(data) {
           {
             type: 'text',
             text: {
-              content: data.content
+              content: data.content.substring(0, 2000)
             }
           }
         ]
@@ -356,21 +459,34 @@ function buildNotionContent(data) {
     });
   }
   
-  if (data.type === 'screenshot' && data.imageData) {
-    // Note: For images, you'd need to upload to external service
-    // Notion API doesn't accept base64 images directly
+  if (data.type === 'screenshot') {
     children.push({
       object: 'block',
-      type: 'paragraph',
-      paragraph: {
+      type: 'callout',
+      callout: {
+        icon: { emoji: '📸' },
         rich_text: [
           {
             type: 'text',
             text: {
-              content: '📸 Screenshot captured (image upload pending)'
+              content: 'Screenshot captured from this page'
             }
           }
         ]
+      }
+    });
+  }
+  
+  if (data.type === 'image' && data.imageUrl) {
+    // External image
+    children.push({
+      object: 'block',
+      type: 'image',
+      image: {
+        type: 'external',
+        external: {
+          url: data.imageUrl
+        }
       }
     });
   }
@@ -421,7 +537,7 @@ function buildNotionContent(data) {
         rich_text: [
           {
             type: 'text',
-            text: { content: data.notes }
+            text: { content: data.notes.substring(0, 2000) }
           }
         ]
       }
@@ -436,18 +552,33 @@ function buildNotionContent(data) {
 // ============================================
 
 function generateCitation(pageInfo, format = 'apa') {
-  return CitationGenerator.generate(pageInfo, format);
+  try {
+    return CitationGenerator.generate(pageInfo, format);
+  } catch (error) {
+    console.error('Citation generation error:', error);
+    return { formatted: '', error: error.message };
+  }
 }
 
 // ============================================
 // SCREENSHOT CAPTURE
 // ============================================
 
-async function captureScreenshot(tab) {
+async function captureVisibleTab() {
   try {
-    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-      format: 'png',
-      quality: 100
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    if (!tab) {
+      return { success: false, error: 'No active tab found' };
+    }
+    
+    // Check if we can capture this tab
+    if (tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+      return { success: false, error: 'Cannot capture browser internal pages' };
+    }
+    
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, {
+      format: 'png'
     });
     
     return {
@@ -456,34 +587,11 @@ async function captureScreenshot(tab) {
     };
     
   } catch (error) {
+    console.error('Screenshot error:', error);
     return {
       success: false,
-      error: error.message
+      error: 'Failed to capture screenshot: ' + error.message
     };
-  }
-}
-
-async function triggerScreenshot(tab) {
-  // Notify content script to start area selection
-  try {
-    const response = await chrome.tabs.sendMessage(tab.id, {
-      type: 'START_AREA_SCREENSHOT'
-    });
-    
-    if (response.success && response.area) {
-      // Capture the visible tab
-      const screenshot = await captureScreenshot(tab);
-      
-      if (screenshot.success) {
-        // Crop to selected area (would need canvas processing)
-        return screenshot;
-      }
-    }
-    
-    return response;
-    
-  } catch (error) {
-    return { success: false, error: error.message };
   }
 }
 
@@ -496,29 +604,33 @@ async function quickClip(data) {
     const { lastDatabase } = await chrome.storage.sync.get('lastDatabase');
     
     if (!lastDatabase) {
-      // Open popup to select database
-      return { success: false, error: 'Please select a database first' };
+      return { success: false, error: 'Please select a default database in Settings first' };
     }
     
     const result = await saveToNotion({
       ...data,
       databaseId: lastDatabase,
-      type: 'selection'
+      type: data.type || 'selection'
     });
     
     if (result.success) {
       // Show notification
-      chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icons/icon128.png',
-        title: 'Clipped to Notion',
-        message: `"${data.selection?.substring(0, 50)}..." saved successfully`
-      });
+      try {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: '✅ Clipped to Notion',
+          message: `"${(data.title || data.selection || 'Content').substring(0, 50)}..." saved successfully`
+        });
+      } catch (e) {
+        console.log('Notification error (non-critical):', e);
+      }
     }
     
     return result;
     
   } catch (error) {
+    console.error('quickClip error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -528,34 +640,53 @@ async function quickClip(data) {
 // ============================================
 
 async function handleSelectionClip(selectionText, tab) {
-  if (!selectionText) return;
+  if (!selectionText) {
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon128.png',
+      title: '⚠️ No Selection',
+      message: 'Please select some text first'
+    });
+    return;
+  }
   
-  const metadata = await chrome.tabs.sendMessage(tab.id, {
-    type: 'GET_PAGE_METADATA'
-  }).catch(() => ({}));
+  let metadata = {};
+  try {
+    metadata = await chrome.tabs.sendMessage(tab.id, {
+      type: 'GET_PAGE_METADATA'
+    });
+  } catch (e) {
+    console.log('Could not get metadata:', e);
+  }
   
   await quickClip({
+    content: selectionText,
     selection: selectionText,
     title: tab.title,
     url: tab.url,
+    type: 'selection',
     ...metadata
   });
 }
 
 async function handlePageClip(tab) {
-  const content = await chrome.tabs.sendMessage(tab.id, {
-    type: 'GET_PAGE_CONTENT'
-  }).catch(() => null);
+  let content = null;
   
-  if (content) {
-    await quickClip({
-      type: 'page',
-      content: content.content,
-      summary: content.summary,
-      title: tab.title,
-      url: tab.url
+  try {
+    content = await chrome.tabs.sendMessage(tab.id, {
+      type: 'GET_PAGE_CONTENT'
     });
+  } catch (e) {
+    console.log('Could not get page content:', e);
   }
+  
+  await quickClip({
+    type: 'page',
+    content: content?.content || '',
+    summary: content?.summary || '',
+    title: tab.title,
+    url: tab.url
+  });
 }
 
 async function handleImageClip(imageUrl, tab) {
@@ -582,21 +713,29 @@ async function handleLinkClip(linkUrl, linkText, tab) {
 // ============================================
 
 async function updateClipStats() {
-  const { clipStats = {} } = await chrome.storage.local.get('clipStats');
-  
-  clipStats.totalClips = (clipStats.totalClips || 0) + 1;
-  clipStats.weeklyCount = (clipStats.weeklyCount || 0) + 1;
-  
-  await chrome.storage.local.set({ clipStats });
+  try {
+    const { clipStats = {} } = await chrome.storage.local.get('clipStats');
+    
+    clipStats.totalClips = (clipStats.totalClips || 0) + 1;
+    clipStats.weeklyCount = (clipStats.weeklyCount || 0) + 1;
+    
+    await chrome.storage.local.set({ clipStats });
+  } catch (e) {
+    console.error('Stats update error:', e);
+  }
 }
 
 async function addToRecentClips(clip) {
-  const { recentClips = [] } = await chrome.storage.local.get('recentClips');
-  
-  recentClips.unshift(clip);
-  const trimmed = recentClips.slice(0, 20);
-  
-  await chrome.storage.local.set({ recentClips: trimmed });
+  try {
+    const { recentClips = [] } = await chrome.storage.local.get('recentClips');
+    
+    recentClips.unshift(clip);
+    const trimmed = recentClips.slice(0, 20);
+    
+    await chrome.storage.local.set({ recentClips: trimmed });
+  } catch (e) {
+    console.error('Recent clips update error:', e);
+  }
 }
 
 // ============================================
@@ -604,26 +743,61 @@ async function addToRecentClips(clip) {
 // ============================================
 
 chrome.commands.onCommand.addListener(async (command) => {
+  console.log('📎 Command received:', command);
+  
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  
+  if (!tab) {
+    console.log('No active tab');
+    return;
+  }
   
   switch (command) {
     case 'quick-clip':
       // Get selection and clip
-      const selection = await chrome.tabs.sendMessage(tab.id, {
-        type: 'GET_SELECTION'
-      }).catch(() => null);
-      
-      if (selection?.selection) {
-        await quickClip({
-          selection: selection.selection,
-          title: tab.title,
-          url: tab.url
+      try {
+        const selection = await chrome.tabs.sendMessage(tab.id, {
+          type: 'GET_SELECTION'
         });
+        
+        if (selection?.selection) {
+          await quickClip({
+            selection: selection.selection,
+            content: selection.selection,
+            title: tab.title,
+            url: tab.url,
+            type: 'selection'
+          });
+        } else {
+          chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icons/icon128.png',
+            title: '⚠️ No Selection',
+            message: 'Please select some text first'
+          });
+        }
+      } catch (e) {
+        console.error('Quick clip error:', e);
       }
       break;
     
     case 'screenshot-clip':
-      await triggerScreenshot(tab);
+      const screenshot = await captureVisibleTab();
+      if (screenshot.success) {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: '📸 Screenshot Captured',
+          message: 'Screenshot saved (open popup to save to Notion)'
+        });
+      } else {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: '❌ Screenshot Failed',
+          message: screenshot.error
+        });
+      }
       break;
   }
 });
