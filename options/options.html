@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notion Research Clipper - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">📎</span>
+          <div class="logo-text">
+            <h1>Research Clipper</h1>
+            <span class="subtitle">Settings & Configuration</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      
+      <!-- Sidebar Navigation -->
+      <nav class="sidebar">
+        <ul class="nav-list">
+          <li class="nav-item active" data-section="connection">
+            <span class="nav-icon">🔗</span>
+            <span class="nav-label">Connection</span>
+          </li>
+          <li class="nav-item" data-section="preferences">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Preferences</span>
+          </li>
+          <li class="nav-item" data-section="citation">
+            <span class="nav-icon">📚</span>
+            <span class="nav-label">Citations</span>
+          </li>
+          <li class="nav-item" data-section="shortcuts">
+            <span class="nav-icon">⌨️</span>
+            <span class="nav-label">Shortcuts</span>
+          </li>
+          <li class="nav-item" data-section="data">
+            <span class="nav-icon">💾</span>
+            <span class="nav-label">Data</span>
+          </li>
+          <li class="nav-item" data-section="about">
+            <span class="nav-icon">ℹ️</span>
+            <span class="nav-label">About</span>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Content Area -->
+      <div class="content">
+        
+        <!-- Connection Section -->
+        <section class="section" id="section-connection">
+          <h2 class="section-title">Notion Connection</h2>
+          
+          <div class="connection-status" id="connectionStatus">
+            <div class="status-icon disconnected">🔌</div>
+            <div class="status-info">
+              <h3 id="connectionTitle">Not Connected</h3>
+              <p id="connectionDesc">Connect your Notion account to start clipping</p>
+            </div>
+          </div>
+          
+          <div class="connection-actions" id="connectionActions">
+            <button class="btn btn-primary btn-large" id="connectBtn">
+              <span class="btn-icon">🔐</span>
+              Connect to Notion
+            </button>
+          </div>
+          
+          <div class="connected-info" id="connectedInfo" style="display: none;">
+            <div class="info-card">
+              <h4>Connected Workspace</h4>
+              <p id="workspaceName">-</p>
+            </div>
+            <div class="info-card">
+              <h4>Available Databases</h4>
+              <p id="databaseCount">-</p>
+            </div>
+            <button class="btn btn-danger" id="disconnectBtn">
+              <span class="btn-icon">🔓</span>
+              Disconnect
+            </button>
+          </div>
+          
+          <div class="help-section">
+            <h3>How to Connect</h3>
+            <ol class="steps-list">
+              <li>Click "Connect to Notion" button above</li>
+              <li>Authorize the extension in the Notion popup</li>
+              <li>Select which pages/databases to share</li>
+              <li>You're all set! Start clipping research</li>
+            </ol>
+            <p class="note">
+              <strong>Note:</strong> We only access the pages you explicitly share.
+              Your data is stored locally and never sent to our servers.
+            </p>
+          </div>
+        </section>
+
+        <!-- Preferences Section -->
+        <section class="section" id="section-preferences" style="display: none;">
+          <h2 class="section-title">Preferences</h2>
+          
+          <div class="setting-group">
+            <h3 class="group-title">General</h3>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <label for="defaultDatabase">Default Database</label>
+                <p class="setting-desc">Clips will be saved here by default</p>
+              </div>
+              <select id="defaultDatabase" class="setting-select">
+                <option value="">Select a database...</option>
+              </select>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <label for="showQuickClip">Quick Clip Button</label>
+                <p class="setting-desc">Show clip button when text is selected</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="showQuickClip" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <label for="autoSave">Auto-Save Selection</label>
+                <p class="setting-desc">Automatically save text selection without confirmation</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="autoSave">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <label for="notificationSound">Notification Sound</label>
+                <p class="setting-desc">Play sound when clip is saved</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="notificationSound" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          
+          <div class="setting-group">
+            <h3 class="group-title">Default Tags</h3>
+            <p class="group-desc">These tags will be automatically added to all clips</p>
+            
+            <div class="tags-input-container" id="defaultTagsContainer">
+              <div class="tags-list" id="defaultTagsList"></div>
+              <input type="text" id="defaultTagsInput" class="tags-input" 
+                     placeholder="Add default tag (press Enter)">
+            </div>
+          </div>
+          
+          <div class="setting-group">
+            <h3 class="group-title">Appearance</h3>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <label for="theme">Theme</label>
+                <p class="setting-desc">Choose your preferred color scheme</p>
+              </div>
+              <select id="theme" class="setting-select">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Citation Section -->
+        <section class="section" id="section-citation" style="display: none;">
+          <h2 class="section-title">Citation Settings</h2>
+          
+          <div class="setting-group">
+            <h3 class="group-title">Default Format</h3>
+            
+            <div class="citation-formats">
+              <label class="format-option">
+                <input type="radio" name="citationFormat" value="apa" checked>
+                <div class="format-card">
+                  <h4>APA (7th Edition)</h4>
+                  <p class="format-example">Author, A. A. (Year). Title. Site. URL</p>
+                </div>
+              </label>
+              
+              <label class="format-option">
+                <input type="radio" name="citationFormat" value="mla">
+                <div class="format-card">
+                  <h4>MLA (9th Edition)</h4>
+                  <p class="format-example">Author. "Title." Site, Date, URL.</p>
+                </div>
+              </label>
+              
+              <label class="format-option">
+                <input type="radio" name="citationFormat" value="chicago">
+                <div class="format-card">
+                  <h4>Chicago (17th Edition)</h4>
+                  <p class="format-example">Author. "Title." Site. Date. URL.</p>
+                </div>
+              </label>
+              
+              <label class="format-option">
+                <input type="radio" name="citationFormat" value="harvard">
+                <div class="format-card">
+                  <h4>Harvard</h4>
+                  <p class="format-example">Author (Year) Title. Available at: URL</p>
+                </div>
+              </label>
+            </div>
+          </div>
+          
+          <div class="setting-group">
+            <h3 class="group-title">Citation Options</h3>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <label for="includeCitation">Include Citation in Clips</label>
+                <p class="setting-desc">Automatically add formatted citation to saved clips</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="includeCitation" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <label for="includeAccessDate">Include Access Date</label>
+                <p class="setting-desc">Add the date you accessed the page</p>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="includeAccessDate" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <!-- Shortcuts Section -->
+        <section class="section" id="section-shortcuts" style="display: none;">
+          <h2 class="section-title">Keyboard Shortcuts</h2>
+          
+          <div class="shortcuts-list">
+            <div class="shortcut-item">
+              <div class="shortcut-info">
+                <h4>Quick Clip Selection</h4>
+                <p>Clip selected text to Notion</p>
+              </div>
+              <div class="shortcut-keys">
+                <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd>
+              </div>
+            </div>
+            
+            <div class="shortcut-item">
+              <div class="shortcut-info">
+                <h4>Take Screenshot</h4>
+                <p>Capture visible area and clip to Notion</p>
+              </div>
+              <div class="shortcut-keys">
+                <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd>
+              </div>
+            </div>
+            
+            <div class="shortcut-item">
+              <div class="shortcut-info">
+                <h4>Open Extension Popup</h4>
+                <p>Open the clipper popup</p>
+              </div>
+              <div class="shortcut-keys">
+                <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>N</kbd>
+              </div>
+            </div>
+          </div>
+          
+          <div class="shortcut-note">
+            <p>
+              <strong>To customize shortcuts:</strong>
+            </p>
+            <ol>
+              <li>Go to <code>chrome://extensions/shortcuts</code></li>
+              <li>Find "Notion Research Clipper"</li>
+              <li>Click the pencil icon to edit shortcuts</li>
+            </ol>
+            <button class="btn btn-secondary" id="openShortcutsBtn">
+              Open Shortcuts Settings
+            </button>
+          </div>
+        </section>
+
+        <!-- Data Section -->
+        <section class="section" id="section-data" style="display: none;">
+          <h2 class="section-title">Data Management</h2>
+          
+          <div class="setting-group">
+            <h3 class="group-title">Statistics</h3>
+            
+            <div class="stats-grid">
+              <div class="stat-card">
+                <span class="stat-value" id="totalClips">0</span>
+                <span class="stat-label">Total Clips</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="weeklyClips">0</span>
+                <span class="stat-label">This Week</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-value" id="storageUsed">0 KB</span>
+                <span class="stat-label">Storage Used</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="setting-group">
+            <h3 class="group-title">Export & Import</h3>
+            
+            <div class="data-actions">
+              <div class="action-card">
+                <h4>📤 Export Data</h4>
+                <p>Download your settings and clip history</p>
+                <button class="btn btn-secondary" id="exportBtn">Export</button>
+              </div>
+              
+              <div class="action-card">
+                <h4>📥 Import Data</h4>
+                <p>Restore from a previous export</p>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+                <button class="btn btn-secondary" id="importBtn">Import</button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="setting-group danger-zone">
+            <h3 class="group-title">Danger Zone</h3>
+            
+            <div class="danger-actions">
+              <div class="danger-item">
+                <div class="danger-info">
+                  <h4>Clear Recent Clips</h4>
+                  <p>Remove all clips from history (doesn't affect Notion)</p>
+                </div>
+                <button class="btn btn-danger" id="clearHistoryBtn">Clear History</button>
+              </div>
+              
+              <div class="danger-item">
+                <div class="danger-info">
+                  <h4>Reset All Settings</h4>
+                  <p>Restore all settings to default values</p>
+                </div>
+                <button class="btn btn-danger" id="resetSettingsBtn">Reset Settings</button>
+              </div>
+              
+              <div class="danger-item">
+                <div class="danger-info">
+                  <h4>Clear All Data</h4>
+                  <p>Remove all extension data including connection</p>
+                </div>
+                <button class="btn btn-danger" id="clearAllBtn">Clear Everything</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="section" id="section-about" style="display: none;">
+          <h2 class="section-title">About</h2>
+          
+          <div class="about-content">
+            <div class="about-header">
+              <span class="about-icon">📎</span>
+              <div class="about-info">
+                <h3>Notion Research Clipper</h3>
+                <p class="version">Version 1.0.0</p>
+              </div>
+            </div>
+            
+            <p class="about-desc">
+              A powerful Chrome extension for researchers, students, and knowledge workers.
+              Clip text, screenshots, and citations directly to your Notion database.
+            </p>
+            
+            <div class="about-links">
+              <a href="https://github.com/yourusername/notion-research-clipper" 
+                 target="_blank" class="about-link">
+                <span>📂</span> GitHub Repository
+              </a>
+              <a href="https://github.com/yourusername/notion-research-clipper/issues" 
+                 target="_blank" class="about-link">
+                <span>🐛</span> Report a Bug
+              </a>
+              <a href="https://github.com/yourusername/notion-research-clipper#readme" 
+                 target="_blank" class="about-link">
+                <span>📖</span> Documentation
+              </a>
+              <a href="mailto:support@yourwebsite.com" class="about-link">
+                <span>✉️</span> Contact Support
+              </a>
+            </div>
+            
+            <div class="about-credits">
+              <h4>Credits</h4>
+              <p>Built with ❤️ for the research community</p>
+              <p class="copyright">© 2024 Your Name. All rights reserved.</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+      <span class="toast-icon" id="toastIcon">✅</span>
+      <span class="toast-message" id="toastMessage">Settings saved!</span>
+    </div>
+
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

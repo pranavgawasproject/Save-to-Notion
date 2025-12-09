@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notion Research Clipper</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">
+        <span class="logo-icon">📎</span>
+        <div class="logo-text">
+          <h1>Research Clipper</h1>
+          <span class="subtitle">Save to Notion</span>
+        </div>
+      </div>
+      <button class="settings-btn" id="settingsBtn" title="Settings">
+        ⚙️
+      </button>
+    </header>
+
+    <!-- Connection Status -->
+    <div class="status-bar" id="statusBar">
+      <span class="status-icon">🔗</span>
+      <span class="status-text" id="statusText">Checking Notion connection...</span>
+    </div>
+
+    <!-- Not Connected State -->
+    <div class="connect-prompt" id="connectPrompt" style="display: none;">
+      <div class="connect-icon">🔐</div>
+      <h2>Connect to Notion</h2>
+      <p>Link your Notion workspace to start clipping research</p>
+      <button class="btn btn-primary btn-large" id="connectNotionBtn">
+        Connect Notion Account
+      </button>
+      <a href="#" class="help-link" id="helpLink">How does this work?</a>
+    </div>
+
+    <!-- Main Content (when connected) -->
+    <main class="main-content" id="mainContent" style="display: none;">
+      
+      <!-- Quick Actions -->
+      <section class="quick-actions">
+        <button class="action-btn" id="clipSelectionBtn">
+          <span class="action-icon">📝</span>
+          <span class="action-label">Clip Selection</span>
+          <span class="action-shortcut">Alt+Shift+S</span>
+        </button>
+        
+        <button class="action-btn" id="screenshotBtn">
+          <span class="action-icon">📸</span>
+          <span class="action-label">Screenshot</span>
+          <span class="action-shortcut">Alt+Shift+C</span>
+        </button>
+        
+        <button class="action-btn" id="clipPageBtn">
+          <span class="action-icon">📄</span>
+          <span class="action-label">Clip Page</span>
+        </button>
+      </section>
+
+      <!-- Current Page Info -->
+      <section class="page-info" id="pageInfo">
+        <div class="page-header">
+          <span class="section-icon">🌐</span>
+          <h3>Current Page</h3>
+        </div>
+        <div class="page-details">
+          <div class="page-title" id="pageTitle">Loading...</div>
+          <div class="page-url" id="pageUrl">Loading...</div>
+        </div>
+      </section>
+
+      <!-- Citation Preview -->
+      <section class="citation-section">
+        <div class="section-header">
+          <span class="section-icon">📚</span>
+          <h3>Auto-Citation</h3>
+          <select id="citationFormat" class="citation-select">
+            <option value="apa">APA</option>
+            <option value="mla">MLA</option>
+            <option value="chicago">Chicago</option>
+            <option value="harvard">Harvard</option>
+          </select>
+        </div>
+        <div class="citation-preview" id="citationPreview">
+          <p class="citation-text" id="citationText">Generating citation...</p>
+          <button class="copy-btn" id="copyCitationBtn" title="Copy citation">
+            📋
+          </button>
+        </div>
+      </section>
+
+      <!-- Destination Database -->
+      <section class="database-section">
+        <div class="section-header">
+          <span class="section-icon">📁</span>
+          <h3>Save to</h3>
+        </div>
+        <select id="databaseSelect" class="database-select">
+          <option value="">Select a database...</option>
+        </select>
+        <button class="refresh-btn" id="refreshDatabasesBtn" title="Refresh databases">
+          🔄
+        </button>
+      </section>
+
+      <!-- Tags Input -->
+      <section class="tags-section">
+        <div class="section-header">
+          <span class="section-icon">🏷️</span>
+          <h3>Tags</h3>
+        </div>
+        <div class="tags-input-container">
+          <div class="tags-list" id="tagsList"></div>
+          <input type="text" id="tagsInput" class="tags-input" placeholder="Add tags (press Enter)">
+        </div>
+      </section>
+
+      <!-- Notes -->
+      <section class="notes-section">
+        <div class="section-header">
+          <span class="section-icon">📝</span>
+          <h3>Notes</h3>
+        </div>
+        <textarea id="notesInput" class="notes-input" placeholder="Add notes about this clip..." rows="3"></textarea>
+      </section>
+
+      <!-- Save Button -->
+      <button class="btn btn-primary btn-save" id="saveBtn">
+        <span class="btn-icon">💾</span>
+        Save to Notion
+      </button>
+
+    </main>
+
+    <!-- Recent Clips -->
+    <section class="recent-section" id="recentSection" style="display: none;">
+      <div class="section-header">
+        <span class="section-icon">🕐</span>
+        <h3>Recent Clips</h3>
+      </div>
+      <div class="recent-list" id="recentList">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="stats" id="stats">
+        <span>📊 0 clips this week</span>
+      </div>
+      <div class="footer-links">
+        <a href="#" id="viewInNotionLink">Open Notion</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+    <div class="loading-spinner"></div>
+    <p class="loading-text" id="loadingText">Saving to Notion...</p>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span class="toast-icon" id="toastIcon">✅</span>
+    <span class="toast-message" id="toastMessage">Saved successfully!</span>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
